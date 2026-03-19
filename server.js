@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const authRoutes = require('./src/routes/authRoutes');
+const appointmentRoutes = require('./src/routes/appointmentRoutes');
 
 const app = express();
 
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/agendamentos', appointmentRoutes);
 
 app.get('/', (req, res) => {
   res.json({ message: 'API da Clínica rodando! ✅' });
