@@ -1,36 +1,41 @@
-const User = require('../models/User');
+const User = require('../models/user');
 const jwt = require('jsonwebtoken');
 
-exports.register = async (req, res) => {
+const registrar = async (req, res) => {
   try {
     const { nome, email, senha, perfil } = req.body;
-    const existe = await User.findOne({ email });
-    if (existe) return res.status(400).json({ erro: 'Email já cadastrado' });
 
-    const user = await User.create({ nome, email, senha, perfil });
-    res.status(201).json({ mensagem: 'Usuário criado com sucesso!', id: user._id });
+    const usuarioExistente = await User.findOne({ email });
+    if (usuarioExistente) return res.status(400).json({ erro: 'Email já cadastrado' });
+
+    const usuario = await User.create({ nome, email, senha, perfil });
+
+    res.status(201).json({ mensagem: 'Usuário criado com sucesso', id: usuario._id });
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 };
 
-exports.login = async (req, res) => {
+const login = async (req, res) => {
   try {
     const { email, senha } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ erro: 'Usuário não encontrado' });
 
-    const senhaOk = await user.compararSenha(senha);
-    if (!senhaOk) return res.status(401).json({ erro: 'Senha incorreta' });
+    const usuario = await User.findOne({ email });
+    if (!usuario) return res.status(401).json({ erro: 'Credenciais inválidas' });
+
+    const senhaCorreta = await usuario.compararSenha(senha);
+    if (!senhaCorreta) return res.status(401).json({ erro: 'Credenciais inválidas' });
 
     const token = jwt.sign(
-      { id: user._id, perfil: user.perfil },
+      { id: usuario._id, perfil: usuario.perfil },
       process.env.JWT_SECRET,
-      { expiresIn: '8h' }
+      { expiresIn: '1d' }
     );
 
-    res.json({ token, perfil: user.perfil, nome: user.nome });
+    res.json({ token, usuario: { id: usuario._id, nome: usuario.nome, perfil: usuario.perfil } });
   } catch (err) {
     res.status(500).json({ erro: err.message });
   }
 };
+
+module.exports = { registrar, login };

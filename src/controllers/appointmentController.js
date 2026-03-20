@@ -1,15 +1,13 @@
 const Appointment = require('../models/Appointment');
 const axios = require('axios');
 
-exports.criar = async (req, res) => {
+const criar = async (req, res) => {
   try {
     const { medico, dataHora, cep } = req.body;
 
-    // Verifica conflito de horário
     const conflito = await Appointment.findOne({ medico, dataHora, status: 'agendado' });
     if (conflito) return res.status(400).json({ erro: 'Horário já ocupado para este médico' });
 
-    // Busca endereço pelo CEP
     let endereco = {};
     if (cep) {
       const { data } = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
@@ -18,7 +16,6 @@ exports.criar = async (req, res) => {
       }
     }
 
-    // Verifica previsão de chuva
     let previsaoChuva = false;
     if (process.env.OPENWEATHER_API_KEY && endereco.cidade) {
       try {
@@ -47,7 +44,7 @@ exports.criar = async (req, res) => {
   }
 };
 
-exports.listar = async (req, res) => {
+const listar = async (req, res) => {
   try {
     const filtro = req.user.perfil === 'secretario' ? {} : { paciente: req.user.id };
     const agendamentos = await Appointment.find(filtro).populate('paciente', 'nome email').sort({ dataHora: 1 });
@@ -57,7 +54,7 @@ exports.listar = async (req, res) => {
   }
 };
 
-exports.cancelar = async (req, res) => {
+const cancelar = async (req, res) => {
   try {
     const ag = await Appointment.findByIdAndUpdate(req.params.id, { status: 'cancelado' }, { new: true });
     if (!ag) return res.status(404).json({ erro: 'Agendamento não encontrado' });
@@ -66,3 +63,5 @@ exports.cancelar = async (req, res) => {
     res.status(500).json({ erro: err.message });
   }
 };
+
+module.exports = { criar, listar, cancelar };
